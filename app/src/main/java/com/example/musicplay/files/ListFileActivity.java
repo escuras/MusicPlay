@@ -9,7 +9,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -24,6 +26,7 @@ import java.util.List;
 public class ListFileActivity extends ListActivity {
 
     private String storagePath;
+    private  List values = new ArrayList();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,11 +42,9 @@ public class ListFileActivity extends ListActivity {
         }
         setTitle(storagePath);
 
-        // Read all files sorted into the values-array
-        List values = new ArrayList();
         File dir = new File(storagePath);
         if (!dir.canRead()) {
-            setTitle(getTitle() + " (inaccessible)");
+            setTitle(getTitle() + " - inacessível.");
         }
         String[] list = dir.list();
         if (list != null) {
@@ -57,8 +58,9 @@ public class ListFileActivity extends ListActivity {
 
         // Put the data into the list
         ArrayAdapter adapter = new ArrayAdapter(this,
-                android.R.layout.simple_list_item_2, android.R.id.text1, values);
+                android.R.layout.simple_list_item_checked, android.R.id.text1, values);
         setListAdapter(adapter);
+        addLongClickAdapter();
     }
 
     @Override
@@ -76,5 +78,22 @@ public class ListFileActivity extends ListActivity {
         } else {
             Toast.makeText(this, filename + " is not a directory", Toast.LENGTH_LONG).show();
         }
+    }
+
+    public void addLongClickAdapter() {
+        ListView listView = (ListView) getListView();
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                String filename = (String) getListAdapter().getItem(position);
+                if (new File(filename).isDirectory()) {
+
+                }
+
+                Toast.makeText(ListFileActivity.this, "somethind", Toast.LENGTH_LONG).show();
+
+                return true;
+            }
+        });
     }
 }

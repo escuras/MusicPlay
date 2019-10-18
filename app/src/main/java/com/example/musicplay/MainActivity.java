@@ -21,8 +21,11 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.example.musicplay.domain.Audio;
+import com.example.musicplay.domain.AudioList;
 import com.example.musicplay.files.ListFileActivity;
 import com.example.musicplay.files.StorageUtil;
+import com.example.musicplay.repository.DBAudioListManager;
+import com.example.musicplay.repository.DBAudioManager;
 import com.example.musicplay.service.MusicService;
 import com.example.musicplay.fragments.ListObject;
 
@@ -60,7 +63,12 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
         addFragment();
         loadAudio();
-        playAudio(0);
+        AudioList list = new AudioList("test");
+        list = saveList(list);
+        saveAudio(list, audioList.get(0));
+        getLists();
+
+        playAudio(1);
        // playAudio("https://upload.wikimedia.org/wikipedia/commons/6/6c/Grieg_Lyric_Pieces_Kobold.ogg");
     }
 
@@ -109,7 +117,6 @@ public class MainActivity extends AppCompatActivity {
     private void playAudio(int audioIndex) {
         StorageUtil storage = new StorageUtil(getApplicationContext());
         if (!serviceBound) {
-
             storage.storeAudio(audioList);
             storage.storeAudioIndex(audioIndex);
             Intent playerIntent = new Intent(this, MusicService.class);
@@ -120,6 +127,23 @@ public class MainActivity extends AppCompatActivity {
             Intent broadcastIntent = new Intent(PLAY_NEW_AUDIO);
             sendBroadcast(broadcastIntent);
         }
+    }
+
+    private List<AudioList> getLists(){
+        DBAudioManager dbAudiomanager = new DBAudioManager(this);
+        List<AudioList> audios = dbAudiomanager.getAll();
+        return audios;
+    }
+
+    private AudioList saveList(AudioList audioList){
+        DBAudioListManager dbAudioListManager = new DBAudioListManager(this);
+        return dbAudioListManager.insert(audioList);
+    }
+
+    private Audio saveAudio(AudioList audioList, Audio audio){
+        audio.setListId(audioList.getId());
+        DBAudioManager dbAudioManager = new DBAudioManager(this);
+        return dbAudioManager.insert(audio);
     }
 
     private void loadAudio() {

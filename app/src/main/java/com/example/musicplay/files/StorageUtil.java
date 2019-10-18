@@ -35,9 +35,12 @@ public class StorageUtil {
         preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
         Gson gson = new Gson();
         String json = preferences.getString("audios", null);
-        Type type = new TypeToken<ArrayList<Audio>>() {
-        }.getType();
-        return gson.fromJson(json, type);
+        Type type = new TypeToken<ArrayList<Audio>>() {}.getType();
+        List<Audio> audios = gson.fromJson(json, type);
+        if(audios == null || audios.size() == 0) {
+            return new ArrayList<>();
+        }
+        return audios;
     }
 
     public void storeAudioIndex(int index) {

@@ -11,13 +11,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.os.Binder;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -67,12 +64,13 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            //Load data from SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
             audioList = storage.loadAudio();
             audioIndex = storage.loadAudioIndex();
-            mediaFile = audioList.get(audioIndex).getData();
-            if (audioIndex != -1 && audioIndex < audioList.size()) {
+            if (audioIndex != -1 &&
+                    audioList.size() > 0 &&
+                    audioIndex < audioList.size()) {
+                mediaFile = audioList.get(audioIndex).getData();
                 activeAudio = audioList.get(audioIndex);
             } else {
                 stopSelf();
@@ -95,12 +93,16 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             }
             buildNotification(PlaybackStatus.PLAYING);
         }
+        handleExternalActions(intent);
+        return super.onStartCommand(intent, flags, startId);
+
+    }
+
+    private void handleExternalActions(Intent intent){
         handleIncomingActions(intent);
         registerBecomingNoisyReceiver();
         registerPlayNewAudio();
         callStateListener();
-        return super.onStartCommand(intent, flags, startId);
-
     }
 
 
@@ -207,13 +209,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public boolean onInfo(MediaPlayer mp, int what, int extra) {
-        //Invoked to communicate some info.
         return false;
     }
 
     @Override
     public void onSeekComplete(MediaPlayer mp) {
-        //Invoked indicating the completion of a seek operation.
     }
 
     public class MusicPlayBinder extends Binder {
@@ -280,7 +280,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            //pause audio on ACTION_AUDIO_BECOMING_NOISY
             pauseMedia();
             buildNotification(PlaybackStatus.PAUSED);
         }
@@ -292,15 +291,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     private void callStateListener() {
-        // Get the telephony manager
         telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        //Starting listening for PhoneState changes
         phoneStateListener = new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String incomingNumber) {
                 switch (state) {
-                    //if at least one call exists or the phone is ringing
-                    //pause the MediaPlayer
                     case TelephonyManager.CALL_STATE_OFFHOOK:
                     case TelephonyManager.CALL_STATE_RINGING:
                         if (mediaPlayer != null) {
@@ -309,7 +304,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
                         }
                         break;
                     case TelephonyManager.CALL_STATE_IDLE:
-                        // Phone idle. Start playing.
                         if (mediaPlayer != null) {
                             if (ongoingCall) {
                                 ongoingCall = false;
@@ -329,14 +323,10 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         public void onReceive(Context context, Intent intent) {
             audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
             if (audioIndex != -1 && audioIndex < audioList.size()) {
-                //index is in a valid range
                 activeAudio = audioList.get(audioIndex);
             } else {
                 stopSelf();
             }
-
-            //A PLAY_NEW_AUDIO action received
-            //reset mediaPlayer to play the new Audio
             stopMedia();
             mediaPlayer.reset();
             initializePlayer();
@@ -350,27 +340,17 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         registerReceiver(playNewAudio, filter);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void initMediaSession() throws RemoteException {
-        if (mediaSessionManager != null) return; //mediaSessionManager exists
-
+        if (mediaSessionManager != null) {
+            return;
+        }
         mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
-        // Create a new MediaSession
         mediaSession = new MediaSessionCompat(getApplicationContext(), "AudioPlayer");
-        //Get MediaSessions transport controls
         transportControls = mediaSession.getController().getTransportControls();
-        //set MediaSession -> ready to receive media commands
         mediaSession.setActive(true);
-        //indicate that the MediaSession handles transport control commands
-        // through its MediaSessionCompat.Callback.
         mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-
-        //Set mediaSession's MetaData
         updateMetaData();
-
-        // Attach Callback to receive MediaSession updates
         mediaSession.setCallback(new MediaSessionCompat.Callback() {
-            // Implement callbacks
             @Override
             public void onPlay() {
                 super.onPlay();
@@ -405,7 +385,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             public void onStop() {
                 super.onStop();
                 removeNotification();
-                //Stop the service
                 stopSelf();
             }
 
@@ -418,8 +397,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     private void updateMetaData() {
         Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
-                R.drawable.play); //replace with medias albumArt
-        // Update the current metadata
+                R.drawable.play);
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
                 .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, activeAudio.getArtist())
@@ -498,6 +476,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
                 .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
                 .addAction(notificationAction, "pause", play_pauseAction)
                 .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2));
+        startForeground(NOTIFICATION_ID, notificationBuilder.build());
 
         ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
     }
