@@ -21,13 +21,13 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.example.musicplay.domain.Audio;
-import com.example.musicplay.domain.AudioList;
-import com.example.musicplay.files.ListFileActivity;
-import com.example.musicplay.files.StorageUtil;
+import com.example.musicplay.domain.PLayList;
+import com.example.musicplay.activity.ListFileActivity;
+import com.example.musicplay.file.StorageUtil;
 import com.example.musicplay.repository.DBAudioListManager;
 import com.example.musicplay.repository.DBAudioManager;
 import com.example.musicplay.service.MusicService;
-import com.example.musicplay.fragments.ListObject;
+import com.example.musicplay.fragment.ListObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,12 +63,8 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
         addFragment();
         loadAudio();
-        AudioList list = new AudioList("test");
-        list = saveList(list);
-        saveAudio(list, audioList.get(0));
         getLists();
-
-        playAudio(1);
+        playAudio(2);
        // playAudio("https://upload.wikimedia.org/wikipedia/commons/6/6c/Grieg_Lyric_Pieces_Kobold.ogg");
     }
 
@@ -129,18 +125,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private List<AudioList> getLists(){
+    private List<PLayList> getLists(){
         DBAudioManager dbAudiomanager = new DBAudioManager(this);
-        List<AudioList> audios = dbAudiomanager.getAll();
+        List<PLayList> audios = dbAudiomanager.getAll();
         return audios;
     }
 
-    private AudioList saveList(AudioList audioList){
+    private PLayList saveList(PLayList audioList){
         DBAudioListManager dbAudioListManager = new DBAudioListManager(this);
         return dbAudioListManager.insert(audioList);
     }
 
-    private Audio saveAudio(AudioList audioList, Audio audio){
+    private Audio saveAudio(PLayList audioList, Audio audio){
         audio.setListId(audioList.getId());
         DBAudioManager dbAudioManager = new DBAudioManager(this);
         return dbAudioManager.insert(audio);

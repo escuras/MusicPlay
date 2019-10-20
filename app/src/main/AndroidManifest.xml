@@ -22,8 +22,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".files.ListFileActivity"
-            android:theme="@android:style/Theme.Holo.Light">
+            android:name=".activity.ListFileActivity">
         </activity>
         <service android:name=".service.MusicService" />
     </application>

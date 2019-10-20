@@ -27,7 +27,7 @@ import com.example.musicplay.MainActivity;
 import com.example.musicplay.R;
 import com.example.musicplay.domain.Audio;
 import com.example.musicplay.enumerations.PlaybackStatus;
-import com.example.musicplay.files.StorageUtil;
+import com.example.musicplay.file.StorageUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -58,7 +58,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private MediaSessionCompat mediaSession;
     private MediaControllerCompat.TransportControls transportControls;
 
-    //AudioPlayer notification ID
     private static final int NOTIFICATION_ID = 101;
 
     @Override
@@ -74,6 +73,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
                 activeAudio = audioList.get(audioIndex);
             } else {
                 stopSelf();
+                return  super.onStartCommand(intent, flags, startId);
             }
         } catch (NullPointerException e) {
             stopSelf();
@@ -133,7 +133,9 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             stopMedia();
             mediaPlayer.release();
         }
-        removeAudioFocus();
+        if(!removeAudioFocus()) {
+            return;
+        }
         if (phoneStateListener != null) {
             telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
         }
@@ -187,8 +189,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     private boolean removeAudioFocus() {
-        return AudioManager.AUDIOFOCUS_REQUEST_GRANTED ==
-                audioManager.abandonAudioFocus(this);
+        if(audioManager != null) {
+            return AudioManager.AUDIOFOCUS_REQUEST_GRANTED ==
+                    audioManager.abandonAudioFocus(this);
+        }
+        return false;
     }
 
     @Override

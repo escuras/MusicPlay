@@ -5,15 +5,10 @@ import android.content.Context;
 import android.database.Cursor;
 
 import com.example.musicplay.domain.Audio;
-import com.example.musicplay.domain.AudioList;
+import com.example.musicplay.domain.PLayList;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -47,9 +42,9 @@ public class DBAudioManager extends DBManager {
         return audio;
     }
 
-    public List<AudioList> getAll() {
+    public List<PLayList> getAll() {
         DBAudioListManager dbAudioListManager = new DBAudioListManager(context);
-        List<AudioList> audioLists = dbAudioListManager.getAll();
+        List<PLayList> audioLists = dbAudioListManager.getAll();
         super.open();
         Cursor cursor = super.getDataBase().query(DatabaseHelper.TABLE_NAME_AUDIO, columns,
                 null, null, null, null, null);
@@ -62,7 +57,7 @@ public class DBAudioManager extends DBManager {
                 Long listId = cursor.getLong(cursor.getColumnIndex(Audio.LIST_ID));
                 String title = cursor.getString(cursor.getColumnIndex(Audio.TITLE));
                 Audio audio = new Audio(data, title, album, artist, id, listId);
-                for(AudioList list : audioLists) {
+                for(PLayList list : audioLists) {
                     if(list.getId() == audio.getId()) {
                         list.getAudios().add(audio);
                     }
@@ -154,7 +149,7 @@ public class DBAudioManager extends DBManager {
         return audios;
     }
 
-    public List<Audio> getByList(AudioList audioList) {
+    public List<Audio> getByList(PLayList audioList) {
         super.open();
         Cursor cursor = super.getDataBase().query(DatabaseHelper.TABLE_NAME_AUDIO, columns,
                 Audio.LIST_ID + " = " + audioList.getId(),

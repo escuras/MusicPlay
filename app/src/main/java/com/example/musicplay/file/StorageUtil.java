@@ -1,4 +1,4 @@
-package com.example.musicplay.files;
+package com.example.musicplay.file;
 
 import android.content.Context;
 import android.content.SharedPreferences;

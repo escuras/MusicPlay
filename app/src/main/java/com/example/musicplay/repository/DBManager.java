@@ -4,8 +4,6 @@ import android.content.Context;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
-import com.example.musicplay.domain.AudioList;
-
 public class DBManager {
     private DatabaseHelper dbHelper;
     private Context context;

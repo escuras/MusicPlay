@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class AudioList {
+public class PLayList {
 
     public static final String ID = "id";
     public static final String NAME = "name";
@@ -13,12 +13,12 @@ public class AudioList {
     private String name;
     private List<Audio> audios = new ArrayList<>();
 
-    public AudioList(long id, String name) {
+    public PLayList(long id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    public AudioList(String name) {
+    public PLayList(String name) {
         this.name = name;
     }
 
@@ -51,7 +51,7 @@ public class AudioList {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        AudioList audioList = (AudioList) o;
+        PLayList audioList = (PLayList) o;
         return id == audioList.id &&
                 Objects.equals(name, audioList.name) &&
                 Objects.equals(audios, audioList.audios);
@@ -60,5 +60,10 @@ public class AudioList {
     @Override
     public int hashCode() {
         return Objects.hash(id, name, audios);
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

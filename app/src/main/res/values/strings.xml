@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">MusicPlay</string>
     <string name="notification">Notificação</string>
+    <string name="addToList">Adicionar à lista de reprodução</string>
+    <string name="cancel">Cancelar</string>
+    <string name="confirm">Confirmar</string>
 </resources>
+
