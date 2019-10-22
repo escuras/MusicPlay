@@ -1,32 +1,21 @@
 package com.example.musicplay.service;
 
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.session.MediaSessionManager;
 import android.os.Binder;
 import android.os.IBinder;
-import android.os.RemoteException;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaControllerCompat;
-import android.support.v4.media.session.MediaSessionCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.musicplay.MainActivity;
-import com.example.musicplay.R;
 import com.example.musicplay.domain.Audio;
-import com.example.musicplay.enumerations.PlaybackStatus;
 import com.example.musicplay.file.StorageUtil;
 
 import java.io.IOException;
@@ -39,13 +28,12 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     private final IBinder iBinder = new MusicPlayBinder();
     private MediaPlayer mediaPlayer = null;
-    private String mediaFile = "";
     public static final String ACTION_PLAY = "com.example.musicplay.ACTION_PLAY";
     public static final String ACTION_PAUSE = "com.example.musicplay.ACTION_PAUSE";
     public static final String ACTION_PREVIOUS = "com.example.musicplay.ACTION_PREVIOUS";
     public static final String ACTION_NEXT = "com.example.musicplay.ACTION_NEXT";
     public static final String ACTION_STOP = "com.example.musicplay.ACTION_STOP";
-    private int resumePosition;
+    private int resumePosition = 0;
     private AudioManager audioManager;
     private boolean ongoingCall = false;
     private PhoneStateListener phoneStateListener;
@@ -53,10 +41,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private List<Audio> audioList;
     private int audioIndex = -1;
     private Audio activeAudio;
-
-    private MediaSessionManager mediaSessionManager;
-    private MediaSessionCompat mediaSession;
-    private MediaControllerCompat.TransportControls transportControls;
 
     private static final int NOTIFICATION_ID = 101;
 
@@ -69,7 +53,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             if (audioIndex != -1 &&
                     audioList.size() > 0 &&
                     audioIndex < audioList.size()) {
-                mediaFile = audioList.get(audioIndex).getData();
                 activeAudio = audioList.get(audioIndex);
             } else {
                 stopSelf();
@@ -82,27 +65,20 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         if (requestAudioFocus() == false) {
             stopSelf();
         }
-
-        if (mediaSessionManager == null) {
-            try {
-                initMediaSession();
-                initializePlayer();
-            } catch (RemoteException e) {
-                e.printStackTrace();
-                stopSelf();
-            }
-            buildNotification(PlaybackStatus.PLAYING);
-        }
+        initializePlayer();
         handleExternalActions(intent);
         return super.onStartCommand(intent, flags, startId);
 
     }
 
     private void handleExternalActions(Intent intent){
-        handleIncomingActions(intent);
         registerBecomingNoisyReceiver();
         registerPlayNewAudio();
+        registerPause();
+        registerPlay();
         callStateListener();
+        registerForward();
+        registerPrevious();
     }
 
 
@@ -139,9 +115,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         if (phoneStateListener != null) {
             telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
         }
-        removeNotification();
         unregisterReceiver(becomingNoisyReceiver);
         unregisterReceiver(playNewAudio);
+        unregisterReceiver(pauseReceiver);
+        unregisterReceiver(forwardReceiver);
+        unregisterReceiver(previousReceiver);
         new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
     }
 
@@ -237,7 +215,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         mediaPlayer.reset();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
-            mediaPlayer.setDataSource(mediaFile);
+            mediaPlayer.setDataSource(activeAudio.getData());
         } catch (IOException e) {
             this.stopSelf();
         }
@@ -249,6 +227,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             return;
         }
         if (!mediaPlayer.isPlaying()) {
+            mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
         }
     }
@@ -259,6 +238,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
+            resumePosition = 0;
         }
     }
 
@@ -272,21 +252,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
-    private void resumeMedia() {
-        if (mediaPlayer == null) {
-            return;
-        }
-        if (!mediaPlayer.isPlaying()) {
-            mediaPlayer.seekTo(resumePosition);
-            mediaPlayer.start();
-        }
-    }
-
     private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             pauseMedia();
-            buildNotification(PlaybackStatus.PAUSED);
+            Toast.makeText(getBaseContext(), "Pausing music", Toast.LENGTH_SHORT);
         }
     };
 
@@ -312,7 +282,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
                         if (mediaPlayer != null) {
                             if (ongoingCall) {
                                 ongoingCall = false;
-                                resumeMedia();
+                                playMedia();
                             }
                         }
                         break;
@@ -335,8 +305,14 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             stopMedia();
             mediaPlayer.reset();
             initializePlayer();
-            updateMetaData();
-            buildNotification(PlaybackStatus.PLAYING);
+        }
+    };
+
+    private BroadcastReceiver pauseReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            pauseMedia();
+            Toast.makeText(getBaseContext(), "Pause", Toast.LENGTH_SHORT);
         }
     };
 
@@ -345,189 +321,63 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         registerReceiver(playNewAudio, filter);
     }
 
-    private void initMediaSession() throws RemoteException {
-        if (mediaSessionManager != null) {
-            return;
+    private void registerForward() {
+        IntentFilter filter = new IntentFilter(MusicService.ACTION_NEXT);
+        registerReceiver(forwardReceiver, filter);
+    }
+
+    private void registerPrevious() {
+        IntentFilter filter = new IntentFilter(MusicService.ACTION_PREVIOUS);
+        registerReceiver(previousReceiver, filter);
+    }
+
+    private void registerPlay() {
+        IntentFilter filter = new IntentFilter(MusicService.ACTION_PLAY);
+        registerReceiver(playReceiver, filter);
+    }
+
+    private void registerPause() {
+        IntentFilter filter = new IntentFilter(MusicService.ACTION_PAUSE);
+        registerReceiver(pauseReceiver, filter);
+    }
+
+    private BroadcastReceiver playReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            playMedia();
         }
-        mediaSessionManager = (MediaSessionManager) getSystemService(Context.MEDIA_SESSION_SERVICE);
-        mediaSession = new MediaSessionCompat(getApplicationContext(), "AudioPlayer");
-        transportControls = mediaSession.getController().getTransportControls();
-        mediaSession.setActive(true);
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        updateMetaData();
-        mediaSession.setCallback(new MediaSessionCompat.Callback() {
-            @Override
-            public void onPlay() {
-                super.onPlay();
-                resumeMedia();
-                buildNotification(PlaybackStatus.PLAYING);
+    };
+
+
+    private BroadcastReceiver forwardReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (audioIndex == audioList.size() - 1) {
+                audioIndex = 0;
+                activeAudio = audioList.get(audioIndex);
+            } else {
+                activeAudio = audioList.get(++audioIndex);
             }
-
-            @Override
-            public void onPause() {
-                super.onPause();
-                pauseMedia();
-                buildNotification(PlaybackStatus.PAUSED);
-            }
-
-            @Override
-            public void onSkipToNext() {
-                super.onSkipToNext();
-                skipToNext();
-                updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
-            }
-
-            @Override
-            public void onSkipToPrevious() {
-                super.onSkipToPrevious();
-                skipToPrevious();
-                updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
-            }
-
-            @Override
-            public void onStop() {
-                super.onStop();
-                removeNotification();
-                stopSelf();
-            }
-
-            @Override
-            public void onSeekTo(long position) {
-                super.onSeekTo(position);
-            }
-        });
-    }
-
-    private void updateMetaData() {
-        Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
-                R.drawable.play);
-        mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, activeAudio.getArtist())
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, activeAudio.getAlbum())
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, activeAudio.getTitle())
-                .build());
-    }
-
-    private void skipToNext() {
-        if (audioIndex == audioList.size() - 1) {
-            //if last in playlist
-            audioIndex = 0;
-            activeAudio = audioList.get(audioIndex);
-        } else {
-            //get next in playlist
-            activeAudio = audioList.get(++audioIndex);
+            new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
+            stopMedia();
+            initializePlayer();
         }
-        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
-        stopMedia();
-        mediaPlayer.reset();
-        initializePlayer();
-    }
+    };
 
-    private void skipToPrevious() {
-        if (audioIndex == 0) {
-            audioIndex = audioList.size() - 1;
-            activeAudio = audioList.get(audioIndex);
-        } else {
-            activeAudio = audioList.get(--audioIndex);
-        }
-        new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
-        stopMedia();
-        mediaPlayer.reset();
-        initializePlayer();
-    }
-
-    private void buildNotification(PlaybackStatus playbackStatus) {
-
-        int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
-        PendingIntent play_pauseAction = null;
-
-        //Build a new notification according to the current state of the MediaPlayer
-        if (playbackStatus == PlaybackStatus.PLAYING) {
-            notificationAction = android.R.drawable.ic_media_pause;
-            //create the pause action
-            play_pauseAction = playbackAction(1);
-        } else if (playbackStatus == PlaybackStatus.PAUSED) {
-            notificationAction = android.R.drawable.ic_media_play;
-            //create the play action
-            play_pauseAction = playbackAction(0);
+    private BroadcastReceiver previousReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (audioIndex == 0) {
+                audioIndex = audioList.size() - 1;
+                activeAudio = audioList.get(audioIndex);
+            } else {
+                activeAudio = audioList.get(--audioIndex);
+            }
+            new StorageUtil(getApplicationContext()).storeAudioIndex(audioIndex);
+            stopMedia();
+            initializePlayer();
         }
 
-        Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
-                R.drawable.play); //replace with your own image
-
-        // Create a new Notification
-        NotificationCompat.Builder notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this,
-                this.getResources().getString(R.string.notification))
-                .setShowWhen(false)
-                // Set the Notification style
-                .setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
-                        // Attach our MediaSession token
-                        .setMediaSession(mediaSession.getSessionToken())
-                        // Show our playback controls in the compact notification view.
-                        .setShowActionsInCompactView(0, 1, 2))
-                // Set the Notification color
-                .setColor(getResources().getColor(R.color.colorPrimary))
-                // Set the large and small icons
-                .setLargeIcon(largeIcon)
-                .setSmallIcon(android.R.drawable.stat_sys_headset)
-                // Set Notification content information
-                .setContentText(activeAudio.getArtist())
-                .setContentTitle(activeAudio.getAlbum())
-                .setContentInfo(activeAudio.getTitle())
-                // Add playback actions
-                .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
-                .addAction(notificationAction, "pause", play_pauseAction)
-                .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2));
-        startForeground(NOTIFICATION_ID, notificationBuilder.build());
-
-        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
-    }
-
-    private void removeNotification() {
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(NOTIFICATION_ID);
-    }
-
-    private PendingIntent playbackAction(int actionNumber) {
-        Intent playbackAction = new Intent(this, MusicService.class);
-        switch (actionNumber) {
-            case 0:
-                playbackAction.setAction(ACTION_PLAY);
-                return PendingIntent.getService(this, actionNumber, playbackAction, 0);
-            case 1:
-                playbackAction.setAction(ACTION_PAUSE);
-                return PendingIntent.getService(this, actionNumber, playbackAction, 0);
-            case 2:
-                playbackAction.setAction(ACTION_NEXT);
-                return PendingIntent.getService(this, actionNumber, playbackAction, 0);
-            case 3:
-                playbackAction.setAction(ACTION_PREVIOUS);
-                return PendingIntent.getService(this, actionNumber, playbackAction, 0);
-            default:
-                break;
-        }
-        return null;
-    }
-
-    private void handleIncomingActions(Intent playbackAction) {
-        if (playbackAction == null || playbackAction.getAction() == null) return;
-
-        String actionString = playbackAction.getAction();
-        if (actionString.equalsIgnoreCase(ACTION_PLAY)) {
-            transportControls.play();
-        } else if (actionString.equalsIgnoreCase(ACTION_PAUSE)) {
-            transportControls.pause();
-        } else if (actionString.equalsIgnoreCase(ACTION_NEXT)) {
-            transportControls.skipToNext();
-        } else if (actionString.equalsIgnoreCase(ACTION_PREVIOUS)) {
-            transportControls.skipToPrevious();
-        } else if (actionString.equalsIgnoreCase(ACTION_STOP)) {
-            transportControls.stop();
-        }
-    }
-
+    };
 
 }

@@ -31,4 +31,9 @@ public class DBRepository {
         DBAudioManager dbAudioManager = new DBAudioManager(context);
         return dbAudioManager.insert(audio);
     }
+
+    public List<Audio> getAudioFromPlayList(PLayList audioList){
+        DBAudioManager dbAudioManager = new DBAudioManager(context);
+        return dbAudioManager.getByList(audioList);
+    }
 }

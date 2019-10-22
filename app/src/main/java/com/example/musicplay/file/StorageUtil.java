@@ -23,7 +23,6 @@ public class StorageUtil {
 
     public void storeAudio(List<Audio> audios) {
         preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
-
         SharedPreferences.Editor editor = preferences.edit();
         Gson gson = new Gson();
         String json = gson.toJson(audios);

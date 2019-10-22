@@ -78,6 +78,7 @@ public class FolderAdapter extends ArrayAdapter<WayPath> {
                         fab.setLayoutParams(rel);
                         fab.setImageResource(android.R.drawable.ic_dialog_email);
                         fab.setSize(FloatingActionButton.SIZE_NORMAL);
+                        relativeLayout.removeView(fab);
                         relativeLayout.addView(fab);
                     }
                     relativeLayout.refreshDrawableState();

@@ -17,6 +17,8 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -24,10 +26,12 @@ import com.example.musicplay.domain.Audio;
 import com.example.musicplay.domain.PLayList;
 import com.example.musicplay.activity.ListFileActivity;
 import com.example.musicplay.file.StorageUtil;
+import com.example.musicplay.fragment.ListPlayListsFragment;
 import com.example.musicplay.repository.DBAudioListManager;
 import com.example.musicplay.repository.DBAudioManager;
 import com.example.musicplay.service.MusicService;
-import com.example.musicplay.fragment.ListObject;
+import com.example.musicplay.fragment.ListAlbunsFragment;
+import com.example.musicplay.util.SystemUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +39,12 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private static final int SUCCES_REQUEST_PERMISSION_CODE = 1;
-    public static final String PLAY_NEW_AUDIO = "com.example.musicplay.PlayNewAudio";
     private String path;
     private MusicService player;
-    private boolean serviceBound = false;
+    public static boolean serviceBound = false;
     private List<Audio> audioList;
+
+    public static final String PLAY_NEW_AUDIO = "com.example.musicplay.PlayNewAudio";
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -64,8 +69,29 @@ public class MainActivity extends AppCompatActivity {
         addFragment();
         loadAudio();
         getLists();
-        playAudio(2);
-       // playAudio("https://upload.wikimedia.org/wikipedia/commons/6/6c/Grieg_Lyric_Pieces_Kobold.ogg");
+        playAudio(4);
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.menu_files:
+                goToFiles();
+                break;
+            case R.id.menu2:
+                finish();
+                break;
+            default:
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -85,11 +111,13 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         if (serviceBound) {
             unbindService(serviceConnection);
-            player.stopSelf();
+            if(player != null) {
+                player.stopSelf();
+            }
         }
     }
 
-    public void goToFiles(View view) {
+    public void goToFiles() {
         Intent intent = new Intent(this, ListFileActivity.class);
         startActivity(intent);
     }
@@ -106,21 +134,20 @@ public class MainActivity extends AppCompatActivity {
     private void addFragment(){
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.mainFragment, new ListObject());
+        fragmentTransaction.add(R.id.downFragment, new ListAlbunsFragment());
+        fragmentTransaction.add(R.id.upFragment, new ListPlayListsFragment());
         fragmentTransaction.commit();
     }
 
     private void playAudio(int audioIndex) {
-        StorageUtil storage = new StorageUtil(getApplicationContext());
+        StorageUtil storage = new StorageUtil(this);
+        storage.storeAudioIndex(audioIndex);
         if (!serviceBound) {
-            storage.storeAudio(audioList);
-            storage.storeAudioIndex(audioIndex);
             Intent playerIntent = new Intent(this, MusicService.class);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
-            storage.storeAudioIndex(audioIndex);
-            Intent broadcastIntent = new Intent(PLAY_NEW_AUDIO);
+            Intent broadcastIntent = new Intent(MusicService.ACTION_PLAY);
             sendBroadcast(broadcastIntent);
         }
     }
@@ -144,22 +171,52 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadAudio() {
         ContentResolver contentResolver = getContentResolver();
-
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
         String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";
         Cursor cursor = contentResolver.query(uri, null, selection, null, sortOrder);
         audioList = new ArrayList<>();
-        if (cursor != null && cursor.getCount() > 0) {
-            while (cursor.moveToNext()) {
+        if (cursor != null) {
+            while (cursor.getCount() > 0 && cursor.moveToNext()) {
                 String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                 String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                 String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
                 String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
                 audioList.add(new Audio(data, title, album, artist));
             }
+            cursor.close();
+            StorageUtil storageUtil = new StorageUtil(this);
+            storageUtil.storeAudio(audioList);
         }
-        cursor.close();
+
+    }
+
+    public void play(View view){
+        SystemUtils.vibrate(this, 50);
+        Intent broadcastIntent = new Intent(MusicService.ACTION_PLAY);
+        sendBroadcast(broadcastIntent);
+    }
+
+    public void pause(View view){
+        SystemUtils.vibrate(this, 50);
+        Intent broadcastIntent = new Intent(MusicService.ACTION_PAUSE);
+        sendBroadcast(broadcastIntent);
+    }
+
+    public void forward(View view){
+        SystemUtils.vibrate(this, 50);
+        Intent broadcastIntent = new Intent(MusicService.ACTION_NEXT);
+        sendBroadcast(broadcastIntent);
+    }
+
+    public void previous(View view){
+        SystemUtils.vibrate(this, 50);
+        Intent broadcastIntent = new Intent(MusicService.ACTION_PREVIOUS);
+        sendBroadcast(broadcastIntent);
+    }
+
+    public List<Audio> getAudioList(){
+        return audioList;
     }
 
 

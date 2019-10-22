@@ -8,12 +8,11 @@
 
     <CheckBox
         android:id="@+id/itemcheckBox"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="40dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:fontFamily="sans-serif"
-        android:paddingTop="5dp"
         android:text="CheckBox"
         android:textAlignment="center"
         android:textSize="20dp"

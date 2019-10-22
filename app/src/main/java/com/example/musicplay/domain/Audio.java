@@ -100,4 +100,9 @@ public class Audio implements Serializable {
     public int hashCode() {
         return Objects.hash(data, title, album, artist, id, listId);
     }
+
+    @Override
+    public String toString() {
+        return title;
+    }
 }
