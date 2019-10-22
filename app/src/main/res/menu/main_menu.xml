@@ -4,6 +4,9 @@
         android:id="@+id/menu_files"
         android:title="Ficheiros" />
     <item
+        android:id="@+id/add_list"
+        android:title="Adicionar lista" />
+    <item
         android:id="@+id/menu_out"
         android:title="Sair" />
 </menu>

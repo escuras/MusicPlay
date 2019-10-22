@@ -26,6 +26,7 @@ import com.example.musicplay.domain.PLayList;
 import com.example.musicplay.file.StorageUtil;
 import com.example.musicplay.repository.DBRepository;
 import com.example.musicplay.service.MusicService;
+import com.example.musicplay.util.FileUtils;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
@@ -35,8 +36,8 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
 
     private static final String RETURN_CHARACTERS = "...";
 
-    private List<Audio> audioList = new ArrayList<>();
-    private String album;
+    private String album = "";
+    private Long listId;
     private MusicService player;
 
     @Override
@@ -48,13 +49,12 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
         if (playListJson != null) {
             PLayList playList = new Gson().fromJson(playListJson, PLayList.class);
             DBRepository dbRepository = new DBRepository(getContext());
-            audioList = dbRepository.getAudioFromPlayList(playList);
-            album = playList.getName();
+            MainActivity.audioList = dbRepository.getAudioFromPlayList(playList);
+            listId = playList.getId();
         } else {
             album = mBundle.getString("album");
+            loadAudio();
         }
-
-        loadAudio();
         return inflater.inflate(R.layout.list_music_fragment, container, false);
     }
 
@@ -69,7 +69,7 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Audio value = (Audio) parent.getAdapter().getItem(position);
-        if(value.getTitle().equals(RETURN_CHARACTERS)) {
+        if (value.getTitle().equals(RETURN_CHARACTERS)) {
             FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
             fragmentTransaction.remove(this);
             Bundle bundle = new Bundle();
@@ -78,11 +78,11 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
             fragmentTransaction.replace(R.id.downFragment, fragment);
             fragmentTransaction.commit();
         } else {
-            for (int index = 0; index < audioList.size(); index++) {
-                Audio audio = audioList.get(index);
-                if(audio.getAlbum().equals(value.getAlbum())
+            for (int index = 0; index < MainActivity.audioList.size(); index++) {
+                Audio audio = MainActivity.audioList.get(index);
+                if (audio.getAlbum().equals(value.getAlbum())
                         && audio.getTitle().equals(value.getTitle())
-                && audio.getData().equals(value.getData())) {
+                        && audio.getData().equals(value.getData())) {
                     playAudio(index);
                 }
             }
@@ -92,14 +92,17 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
 
     private void loadAudio() {
         StorageUtil storageUtil = new StorageUtil(getContext());
-        audioList =  storageUtil.loadAudio();
+        MainActivity.audioList = storageUtil.loadAudio();
     }
 
     private List<Audio> loadMusic() {
         List<Audio> music = new ArrayList<>();
-        music.add(new Audio("",RETURN_CHARACTERS,"",""));
-        for (Audio audio : audioList) {
-            if (audio.getAlbum().equals(album)) {
+        music.add(new Audio("", RETURN_CHARACTERS, "", ""));
+        for (Audio audio : MainActivity.audioList) {
+            if (audio.getAlbum().equals(album) ||
+                    (listId != null &&
+                            listId == audio.getListId())
+            && FileUtils.isAudio(audio.getData())) {
                 music.add(audio);
             }
         }

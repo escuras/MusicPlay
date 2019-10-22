@@ -22,18 +22,23 @@ import android.widget.ListView;
 import com.example.musicplay.R;
 import com.example.musicplay.domain.Audio;
 import com.example.musicplay.domain.PLayList;
+import com.example.musicplay.domain.WayPath;
+import com.example.musicplay.file.FolderAdapter;
 import com.example.musicplay.repository.DBRepository;
+import com.example.musicplay.util.FileUtils;
 
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FileDialog extends DialogFragment {
 
     private DBRepository dbRepository;
-    private String path;
+    private String path = "";
+    private List<Audio> audios = new ArrayList<>();
     private PLayList pLayList;
     private String authority = "com.example.musicplay";
 
@@ -49,7 +54,12 @@ public class FileDialog extends DialogFragment {
                 })
                 .setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        if(pLayList != null) {
+                        if(audios.size() > 0) {
+                            DBRepository dbRepository = new DBRepository(getContext());
+                            for(Audio audio : audios) {
+                                dbRepository.saveAudio(pLayList, audio);
+                            }
+                        }  else if (!path.equals("")) {
                             addContentToPlayList(pLayList);
                         }
                     }
@@ -75,14 +85,13 @@ public class FileDialog extends DialogFragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 CheckedTextView checkedItem = (CheckedTextView) view;
                 checkedItem.toggle();
-                pLayList = (PLayList) parent.getAdapter().getItem(position);
                 for (int i = 0; i < parent.getChildCount(); i++) {
                     if (i != position) {
                         CheckedTextView other = (CheckedTextView) parent.getChildAt(i);
                         other.setChecked(false);
                     }
                 }
-
+                pLayList = (PLayList) parent.getAdapter().getItem(position);
             }
         });
         return listView;
@@ -92,63 +101,40 @@ public class FileDialog extends DialogFragment {
         this.path = path;
     }
 
+    public void setListAudios(List<Audio> audios) {
+        this.audios = audios;
+    }
+
     private void initDatabase(Context context){
         dbRepository = new DBRepository(context);
     }
 
     private void addContentToPlayList(PLayList pLayList) {
-        if (path == null) {
+        File dir = new File(path);
+        if (!dir.canRead()) {
             return;
         }
-        Uri uri = Uri.fromFile(new File(path));
-        if (uri == null) {
-            return;
-        }
-        ContentResolver resolver = getContext().getContentResolver();
-        try {
-            resolver.openFileDescriptor(uri, "r");
-            String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
-            String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";
-            Cursor cursor = resolver.query(uri, null, selection, null, sortOrder);
-            if (cursor != null) {
-                if(cursor.getCount() > 0) {
-                    while (cursor.moveToNext()) {
-                        String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
-                        String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                        String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
-                        String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                        Audio audio = new Audio(data, title, album, artist);
-                        audio.setListId(pLayList.getId());
-                        dbRepository.saveAudio(pLayList, audio);
-                    }
+        String[] list = dir.list();
+        List<WayPath> values = new ArrayList<>();
+        if (list != null) {
+            for (String file : list) {
+                if (!file.startsWith(".")) {
+                    WayPath path = new WayPath(file, dir.getAbsolutePath() + "/" + file, dir.getName());
+                    values.add(path);
                 }
-                cursor.close();
             }
-        } catch(FileNotFoundException fnf) {}
+        }
+        if(values.size() > 0) {
+            for(WayPath wayPath : values){
+                if(wayPath.isDirectory()) {
+                    continue;
+                }
+                if (FileUtils.isAudio(wayPath.getAbsolutePath())) {
+                    DBRepository dbRepository = new DBRepository(getContext());
+                    Audio audio = new Audio(wayPath.getAbsolutePath(), wayPath.getName(), wayPath.getFolder(), "");
+                    dbRepository.saveAudio(pLayList, audio);
+                }
+            }
+        }
     }
-
-
-
-
-/*
-      if (checkedItem.isSelected())
-    {
-        checkedItem.setSelected(false);
-        Drawable yourDrawable = MaterialDrawableBuilder.with(getContext()) // provide a context
-                .setIcon(MaterialDrawableBuilder.IconValue.CHECKBOX_BLANK_CIRCLE) // provide an icon
-                .setColor(Color.WHITE) // set the icon color
-                .setToActionbarSize() // set the icon size
-                .build(); // Finally call build
-        checkedItem.setCheckMarkDrawable (yourDrawable);
-    }
-                else
-    {
-        Drawable yourDrawable = MaterialDrawableBuilder.with(getContext()) // provide a context
-                .setIcon(MaterialDrawableBuilder.IconValue.CHECKBOX_MARKED_CIRCLE) // provide an icon
-                .setColor(Color.WHITE) // set the icon color
-                .setToActionbarSize() // set the icon size
-                .build(); // Finally call build
-        checkedItem.setSelected(true);
-        checkedItem.setCheckMarkDrawable(yourDrawable);
-    }*/
 }

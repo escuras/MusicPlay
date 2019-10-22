@@ -4,24 +4,22 @@ import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
-import android.widget.LinearLayout;
+import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
-import android.widget.Toolbar;
 
 import com.example.musicplay.R;
 import com.example.musicplay.dialog.FileDialog;
+import com.example.musicplay.domain.Audio;
 import com.example.musicplay.domain.WayPath;
 import com.example.musicplay.file.FolderAdapter;
+import com.example.musicplay.util.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -31,12 +29,13 @@ import java.util.List;
 public class ListFileActivity extends AppCompatActivity {
 
     private String storagePath;
-    private List<WayPath> values = new ArrayList();
+    private List<WayPath> values;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_files);
+        values = new ArrayList();
         if (getIntent().hasExtra("path")) {
             storagePath = getIntent().getStringExtra("path");
         } else {
@@ -51,8 +50,12 @@ public class ListFileActivity extends AppCompatActivity {
         if (list != null) {
             for (String file : list) {
                 if (!file.startsWith(".")) {
-                    WayPath path = new WayPath(file, dir.getAbsolutePath() + "/" + file);
-                    values.add(path);
+                    WayPath path = new WayPath(file, dir.getAbsolutePath() + "/" + file, dir.getName());
+                    if(path.isDirectory()) {
+                        values.add(path);
+                    } else if(FileUtils.isAudio(path.getAbsolutePath())) {
+                        values.add(path);
+                    }
                 }
             }
         }
@@ -80,12 +83,27 @@ public class ListFileActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.menu1:
-                Toast.makeText(this, "Clicked Menu 1", Toast.LENGTH_SHORT).show();
-                break;
-            case R.id.menu2:
-                Toast.makeText(this, "Clicked Menu 2", Toast.LENGTH_SHORT).show();
+                ListView listView = findViewById(R.id.list_files);
+                int val = listView.getChildCount();
+                ListAdapter adapter = listView.getAdapter();
+                List<Audio> audios = new ArrayList<>();
+                for (int value = 0; value < val; value++) {
+                    View view = listView.getChildAt(value).findViewById(R.id.itemcheckBox);
+                    if (view instanceof CheckBox) {
+                        if (((CheckBox) view).isChecked()) {
+                            WayPath wayPath = (WayPath) adapter.getItem(value);
+                            Audio audio = new Audio(wayPath.getAbsolutePath(), wayPath.getName(), wayPath.getFolder(), "");
+                            audios.add(audio);
+                        }
+                    }
+                }
+                if (audios.size() > 0) {
+                    FileDialog fileDialog = new FileDialog();
+                    fileDialog.setListAudios(audios);
+                    fileDialog.show(getFragmentManager(), "");
+                }
                 break;
             default:
                 break;
@@ -94,7 +112,7 @@ public class ListFileActivity extends AppCompatActivity {
     }
 
 
-    private void addClickListeners(){
+    private void addClickListeners() {
         this.addClickAdapter();
         this.addLongClickAdapter();
     }
@@ -123,11 +141,10 @@ public class ListFileActivity extends AppCompatActivity {
                 ListView listView = (ListView) findViewById(R.id.list_files);
                 WayPath filename = (WayPath) listView.getAdapter().getItem(position);
                 if (new File(filename.getAbsolutePath()).isDirectory()) {
-
+                    FileDialog fileDialog = new FileDialog();
+                    fileDialog.setPath(filename.getAbsolutePath());
+                    fileDialog.show(getFragmentManager(), "");
                 }
-                FileDialog fileDialog = new FileDialog();
-                fileDialog.setPath(filename.getAbsolutePath());
-                fileDialog.show(getFragmentManager(), "");
                 return true;
             }
         });

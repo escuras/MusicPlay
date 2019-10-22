@@ -20,8 +20,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
+import com.example.musicplay.dialog.PlayListDialog;
 import com.example.musicplay.domain.Audio;
 import com.example.musicplay.domain.PLayList;
 import com.example.musicplay.activity.ListFileActivity;
@@ -39,10 +39,10 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private static final int SUCCES_REQUEST_PERMISSION_CODE = 1;
-    private String path;
     private MusicService player;
     public static boolean serviceBound = false;
-    private List<Audio> audioList;
+    public static List<Audio> audioList;
+    private ListAlbunsFragment listAlbunsFragment = new ListAlbunsFragment();
 
     public static final String PLAY_NEW_AUDIO = "com.example.musicplay.PlayNewAudio";
 
@@ -52,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
             MusicService.MusicPlayBinder binder = (MusicService.MusicPlayBinder) service;
             player = binder.getService();
             serviceBound = true;
-            Toast.makeText(MainActivity.this, "Ligado ao serviço", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -68,8 +67,6 @@ public class MainActivity extends AppCompatActivity {
         checkPermissions();
         addFragment();
         loadAudio();
-        getLists();
-        playAudio(4);
     }
 
 
@@ -81,11 +78,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.menu_files:
                 goToFiles();
                 break;
-            case R.id.menu2:
+            case R.id.add_list:
+                PlayListDialog playListDialog = new PlayListDialog();
+                playListDialog.show(getFragmentManager(), "");
+                break;
+            case R.id.menu_out:
                 finish();
                 break;
             default:
@@ -110,8 +111,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (serviceBound) {
-            unbindService(serviceConnection);
-            if(player != null) {
+            try {
+                unbindService(serviceConnection);
+            } catch (IllegalArgumentException e) {
+            }
+            if (player != null) {
                 player.stopSelf();
             }
         }
@@ -122,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void checkPermissions(){
+    private void checkPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -131,11 +135,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void addFragment(){
+    private void addFragment() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.downFragment, new ListAlbunsFragment());
-        fragmentTransaction.add(R.id.upFragment, new ListPlayListsFragment());
+        fragmentTransaction.replace(R.id.downFragment, listAlbunsFragment);
+        fragmentTransaction.replace(R.id.upFragment, new ListPlayListsFragment());
         fragmentTransaction.commit();
     }
 
@@ -152,18 +156,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private List<PLayList> getLists(){
-        DBAudioManager dbAudiomanager = new DBAudioManager(this);
-        List<PLayList> audios = dbAudiomanager.getAll();
-        return audios;
-    }
-
-    private PLayList saveList(PLayList audioList){
+    private PLayList saveList(PLayList audioList) {
         DBAudioListManager dbAudioListManager = new DBAudioListManager(this);
         return dbAudioListManager.insert(audioList);
     }
 
-    private Audio saveAudio(PLayList audioList, Audio audio){
+    private Audio saveAudio(PLayList audioList, Audio audio) {
         audio.setListId(audioList.getId());
         DBAudioManager dbAudioManager = new DBAudioManager(this);
         return dbAudioManager.insert(audio);
@@ -191,35 +189,33 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void play(View view){
+    public void play(View view) {
         SystemUtils.vibrate(this, 50);
         Intent broadcastIntent = new Intent(MusicService.ACTION_PLAY);
         sendBroadcast(broadcastIntent);
     }
 
-    public void pause(View view){
+    public void pause(View view) {
         SystemUtils.vibrate(this, 50);
         Intent broadcastIntent = new Intent(MusicService.ACTION_PAUSE);
         sendBroadcast(broadcastIntent);
     }
 
-    public void forward(View view){
+    public void forward(View view) {
         SystemUtils.vibrate(this, 50);
         Intent broadcastIntent = new Intent(MusicService.ACTION_NEXT);
         sendBroadcast(broadcastIntent);
     }
 
-    public void previous(View view){
+    public void previous(View view) {
         SystemUtils.vibrate(this, 50);
         Intent broadcastIntent = new Intent(MusicService.ACTION_PREVIOUS);
         sendBroadcast(broadcastIntent);
     }
 
-    public List<Audio> getAudioList(){
+    public List<Audio> getAudioList() {
         return audioList;
     }
-
-
 
 
 }

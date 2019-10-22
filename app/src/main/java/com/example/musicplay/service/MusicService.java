@@ -48,7 +48,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
             StorageUtil storage = new StorageUtil(getApplicationContext());
-            audioList = storage.loadAudio();
+            audioList = MainActivity.audioList;
             audioIndex = storage.loadAudioIndex();
             if (audioIndex != -1 &&
                     audioList.size() > 0 &&
@@ -79,11 +79,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         callStateListener();
         registerForward();
         registerPrevious();
-    }
-
-
-    public void play() throws IOException {
-        mediaPlayer.start();
     }
 
     @Override
@@ -213,7 +208,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         mediaPlayer.setOnSeekCompleteListener(this);
         mediaPlayer.setOnInfoListener(this);
         mediaPlayer.reset();
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             mediaPlayer.setDataSource(activeAudio.getData());
         } catch (IOException e) {
