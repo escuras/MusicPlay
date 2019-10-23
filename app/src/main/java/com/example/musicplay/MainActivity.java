@@ -2,20 +2,16 @@ package com.example.musicplay;
 
 import android.Manifest;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.IBinder;
-import android.provider.MediaStore;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,16 +29,13 @@ import com.example.musicplay.service.MusicService;
 import com.example.musicplay.fragment.ListAlbunsFragment;
 import com.example.musicplay.util.SystemUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class MainActivity extends AppCompatActivity {
 
     private static final int SUCCES_REQUEST_PERMISSION_CODE = 1;
     private MusicService player;
     public static boolean serviceBound = false;
-    public static List<Audio> audioList;
     private ListAlbunsFragment listAlbunsFragment = new ListAlbunsFragment();
+    private ListPlayListsFragment listPlayListsFragment = new ListPlayListsFragment();
 
     public static final String PLAY_NEW_AUDIO = "com.example.musicplay.PlayNewAudio";
 
@@ -66,7 +59,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         checkPermissions();
         addFragment();
-        loadAudio();
     }
 
 
@@ -119,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
                 player.stopSelf();
             }
         }
+        StorageUtil storageUtil = new StorageUtil(this);
+        storageUtil.clearCachedAudioPlaylist();
     }
 
     public void goToFiles() {
@@ -136,10 +130,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addFragment() {
-        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentManager fragmentManager = getFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.replace(R.id.downFragment, listAlbunsFragment);
-        fragmentTransaction.replace(R.id.upFragment, new ListPlayListsFragment());
+        fragmentTransaction.replace(R.id.upFragment, listPlayListsFragment);
         fragmentTransaction.commit();
     }
 
@@ -167,28 +161,6 @@ public class MainActivity extends AppCompatActivity {
         return dbAudioManager.insert(audio);
     }
 
-    private void loadAudio() {
-        ContentResolver contentResolver = getContentResolver();
-        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
-        String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";
-        Cursor cursor = contentResolver.query(uri, null, selection, null, sortOrder);
-        audioList = new ArrayList<>();
-        if (cursor != null) {
-            while (cursor.getCount() > 0 && cursor.moveToNext()) {
-                String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
-                String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
-                String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                audioList.add(new Audio(data, title, album, artist));
-            }
-            cursor.close();
-            StorageUtil storageUtil = new StorageUtil(this);
-            storageUtil.storeAudio(audioList);
-        }
-
-    }
-
     public void play(View view) {
         SystemUtils.vibrate(this, 50);
         Intent broadcastIntent = new Intent(MusicService.ACTION_PLAY);
@@ -212,10 +184,5 @@ public class MainActivity extends AppCompatActivity {
         Intent broadcastIntent = new Intent(MusicService.ACTION_PREVIOUS);
         sendBroadcast(broadcastIntent);
     }
-
-    public List<Audio> getAudioList() {
-        return audioList;
-    }
-
 
 }

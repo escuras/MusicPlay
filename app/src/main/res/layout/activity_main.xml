@@ -19,38 +19,44 @@
 
     </FrameLayout>
 
+
     <LinearLayout
         android:id="@+id/linear_layout"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_width="fill_parent"
+        android:layout_height="60dp"
+        android:gravity="center"
         android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/upFragment"
-        app:layout_constraintStart_toStartOf="@+id/downFragment">
+        app:layout_constraintStart_toStartOf="@+id/downFragment"
+        app:layout_constraintTop_toBottomOf="@id/upFragment">
+
+
+        <Button
+            android:id="@+id/button_previous"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="8dp"
+            android:drawableTop="@drawable/buttonprevious"
+            android:onClick="previous" />
 
         <Button
             android:id="@+id/button_pause"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="end"
             android:layout_marginTop="8dp"
             android:drawableTop="@drawable/buttonpause"
             android:onClick="pause" />
-
-        <Button
-            android:id="@+id/button_forward"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="0dp"
-            android:layout_marginTop="8dp"
-            android:drawableTop="@drawable/forward"
-            android:onClick="forward" />
 
         <Button
             android:id="@+id/button_play"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="end"
             android:layout_marginStart="0dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="0dp"
@@ -58,14 +64,17 @@
             android:onClick="play" />
 
         <Button
-            android:id="@+id/button_previous"
+            android:id="@+id/button_forward"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="end"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
-            android:drawableTop="@drawable/previous"
-            android:onClick="previous" />
+            android:drawableTop="@drawable/buttonforward"
+            android:onClick="forward" />
+
+
     </LinearLayout>
 
 

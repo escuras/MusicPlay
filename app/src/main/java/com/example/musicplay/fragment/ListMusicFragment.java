@@ -1,5 +1,7 @@
 package com.example.musicplay.fragment;
 
+import android.app.FragmentTransaction;
+import android.app.ListFragment;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -10,14 +12,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.MediaStore;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Toast;
 
 import com.example.musicplay.MainActivity;
 import com.example.musicplay.R;
@@ -39,6 +38,7 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
     private String album = "";
     private Long listId;
     private MusicService player;
+    public static List<Audio> audioList = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater,
@@ -49,11 +49,13 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
         if (playListJson != null) {
             PLayList playList = new Gson().fromJson(playListJson, PLayList.class);
             DBRepository dbRepository = new DBRepository(getContext());
-            MainActivity.audioList = dbRepository.getAudioFromPlayList(playList);
+            audioList = dbRepository.getAudioFromPlayList(playList);
+            StorageUtil storageUtil = new StorageUtil(getContext());
+            storageUtil.storeAudio(audioList);
             listId = playList.getId();
         } else {
             album = mBundle.getString("album");
-            loadAudio();
+            loadAudio(album);
         }
         return inflater.inflate(R.layout.list_music_fragment, container, false);
     }
@@ -70,7 +72,7 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Audio value = (Audio) parent.getAdapter().getItem(position);
         if (value.getTitle().equals(RETURN_CHARACTERS)) {
-            FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+            FragmentTransaction fragmentTransaction = getActivity().getFragmentManager().beginTransaction();
             fragmentTransaction.remove(this);
             Bundle bundle = new Bundle();
             ListAlbunsFragment fragment = new ListAlbunsFragment();
@@ -78,8 +80,8 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
             fragmentTransaction.replace(R.id.downFragment, fragment);
             fragmentTransaction.commit();
         } else {
-            for (int index = 0; index < MainActivity.audioList.size(); index++) {
-                Audio audio = MainActivity.audioList.get(index);
+            for (int index = 0; index < audioList.size(); index++) {
+                Audio audio = audioList.get(index);
                 if (audio.getAlbum().equals(value.getAlbum())
                         && audio.getTitle().equals(value.getTitle())
                         && audio.getData().equals(value.getData())) {
@@ -90,19 +92,19 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
 
     }
 
-    private void loadAudio() {
+    private void loadAudio(String album) {
         StorageUtil storageUtil = new StorageUtil(getContext());
-        MainActivity.audioList = storageUtil.loadAudio();
+        audioList = storageUtil.loadAudio(getActivity(), album, false);
     }
 
     private List<Audio> loadMusic() {
         List<Audio> music = new ArrayList<>();
         music.add(new Audio("", RETURN_CHARACTERS, "", ""));
-        for (Audio audio : MainActivity.audioList) {
+        for (Audio audio : audioList) {
             if (audio.getAlbum().equals(album) ||
                     (listId != null &&
                             listId == audio.getListId())
-            && FileUtils.isAudio(audio.getData())) {
+                            && FileUtils.isAudio(audio.getData())) {
                 music.add(audio);
             }
         }
@@ -122,13 +124,22 @@ public class ListMusicFragment extends ListFragment implements AdapterView.OnIte
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (MainActivity.serviceBound) {
+            try {
+                getActivity().unbindService(serviceConnection);
+            } catch (IllegalArgumentException e) { }
+        }
+    }
+
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             MusicService.MusicPlayBinder binder = (MusicService.MusicPlayBinder) service;
             player = binder.getService();
             MainActivity.serviceBound = true;
-            Toast.makeText(getContext(), "Ligado ao serviço", Toast.LENGTH_SHORT).show();
         }
 
         @Override

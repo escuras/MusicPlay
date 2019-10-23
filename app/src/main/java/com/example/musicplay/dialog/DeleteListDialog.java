@@ -3,29 +3,30 @@ package com.example.musicplay.dialog;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ListView;
 
 import com.example.musicplay.R;
 import com.example.musicplay.domain.PLayList;
 import com.example.musicplay.fragment.ListPlayListsFragment;
 import com.example.musicplay.repository.DBRepository;
 
-public class PlayListDialog extends DialogFragment {
+public class DeleteListDialog extends DialogFragment {
 
-    private ViewGroup view;
+    private PLayList pLayList;
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setView(buildReproductionLists());
-        builder.setMessage(R.string.addToList)
+        builder.setMessage(R.string.deleteFromList)
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dismiss();
@@ -33,13 +34,10 @@ public class PlayListDialog extends DialogFragment {
                 })
                 .setPositiveButton(R.string.confirm, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        EditText editText = (EditText)view.getChildAt(1);
-                        String name = editText.getText().toString();
-                        if(name != null && !name.trim().isEmpty()) {
-                            DBRepository dbRepository = new DBRepository(getContext());
-                            PLayList pLayList = new PLayList(name);
-                            dbRepository.savePlayList(pLayList);
-                            FragmentManager fragmentManager =((AppCompatActivity)getActivity()).getFragmentManager();
+                        if(pLayList != null) {
+                            DBRepository dbRepository = new DBRepository(getActivity());
+                            dbRepository.deletePlayList(pLayList);
+                            FragmentManager fragmentManager = ((AppCompatActivity) getActivity()).getFragmentManager();
                             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
                             fragmentTransaction.replace(R.id.upFragment, new ListPlayListsFragment());
                             fragmentTransaction.commit();
@@ -49,9 +47,8 @@ public class PlayListDialog extends DialogFragment {
         return builder.create();
     }
 
-    private ViewGroup buildReproductionLists() {
-        LayoutInflater inflater = getActivity().getLayoutInflater();
-        view = (ViewGroup) inflater.inflate(R.layout.play_list_create, null);
-        return view;
+    public void setPlayList(PLayList playList) {
+        this.pLayList = playList;
     }
+
 }

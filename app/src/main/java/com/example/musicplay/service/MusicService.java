@@ -17,6 +17,7 @@ import android.widget.Toast;
 import com.example.musicplay.MainActivity;
 import com.example.musicplay.domain.Audio;
 import com.example.musicplay.file.StorageUtil;
+import com.example.musicplay.fragment.ListMusicFragment;
 
 import java.io.IOException;
 import java.util.List;
@@ -48,7 +49,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
             StorageUtil storage = new StorageUtil(getApplicationContext());
-            audioList = MainActivity.audioList;
+            audioList = ListMusicFragment.audioList;
             audioIndex = storage.loadAudioIndex();
             if (audioIndex != -1 &&
                     audioList.size() > 0 &&
@@ -115,6 +116,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         unregisterReceiver(pauseReceiver);
         unregisterReceiver(forwardReceiver);
         unregisterReceiver(previousReceiver);
+        unregisterReceiver(playReceiver);
         new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
     }
 
@@ -217,12 +219,14 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     private void playMedia() {
+        audioList = ListMusicFragment.audioList;
         if (mediaPlayer == null) {
             return;
         }
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
+            Toast.makeText(getApplicationContext(), "Playing " + activeAudio.getTitle(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -243,6 +247,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
+            Toast.makeText(getApplicationContext(), "Pausing", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -250,7 +255,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         @Override
         public void onReceive(Context context, Intent intent) {
             pauseMedia();
-            Toast.makeText(getBaseContext(), "Pausing music", Toast.LENGTH_SHORT);
+            Toast.makeText(getBaseContext(), "Pausing", Toast.LENGTH_SHORT);
         }
     };
 
@@ -290,6 +295,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private BroadcastReceiver playNewAudio = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            audioList = ListMusicFragment.audioList;
             audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
             if (audioIndex != -1 && audioIndex < audioList.size()) {
                 activeAudio = audioList.get(audioIndex);
@@ -298,15 +304,8 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             }
             stopMedia();
             mediaPlayer.reset();
+            Toast.makeText(getApplicationContext(), "Playing " + activeAudio.getTitle(), Toast.LENGTH_SHORT).show();
             initializePlayer();
-        }
-    };
-
-    private BroadcastReceiver pauseReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            pauseMedia();
-            Toast.makeText(getBaseContext(), "Pause", Toast.LENGTH_SHORT);
         }
     };
 
@@ -334,6 +333,14 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         IntentFilter filter = new IntentFilter(MusicService.ACTION_PAUSE);
         registerReceiver(pauseReceiver, filter);
     }
+
+    private BroadcastReceiver pauseReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            pauseMedia();
+            Toast.makeText(getBaseContext(), "Pause", Toast.LENGTH_SHORT);
+        }
+    };
 
     private BroadcastReceiver playReceiver = new BroadcastReceiver() {
         @Override

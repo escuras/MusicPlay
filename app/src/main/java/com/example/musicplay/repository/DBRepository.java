@@ -21,19 +21,29 @@ public class DBRepository {
         return audios;
     }
 
-    public PLayList savePlayList(PLayList audioList){
+    public PLayList savePlayList(PLayList pLayList){
         DBAudioListManager dbAudioListManager = new DBAudioListManager(context);
-        return dbAudioListManager.insert(audioList);
+        return dbAudioListManager.insert(pLayList);
     }
 
-    public Audio saveAudio(PLayList audioList, Audio audio){
-        audio.setListId(audioList.getId());
+    public Audio saveAudio(PLayList pLayList, Audio audio){
+        audio.setListId(pLayList.getId());
         DBAudioManager dbAudioManager = new DBAudioManager(context);
         return dbAudioManager.insert(audio);
     }
 
-    public List<Audio> getAudioFromPlayList(PLayList audioList){
+    public List<Audio> getAudioFromPlayList(PLayList pLayList){
         DBAudioManager dbAudioManager = new DBAudioManager(context);
-        return dbAudioManager.getByList(audioList);
+        return dbAudioManager.getByList(pLayList);
     }
+    public void deletePlayList(PLayList pLayList){
+        DBAudioManager dbAudioManager = new DBAudioManager(context);
+        List<Audio> audios = dbAudioManager.getByList(pLayList);
+        for(Audio audio : audios) {
+            dbAudioManager.delete(audio);
+        }
+        DBAudioListManager dbAudioListManager = new DBAudioListManager(context);
+        dbAudioListManager.delete(pLayList);
+    }
+
 }

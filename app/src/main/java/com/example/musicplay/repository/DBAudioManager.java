@@ -33,7 +33,9 @@ public class DBAudioManager extends DBManager {
         contentValues.put(Audio.LIST_ID, audio.getListId());
         Audio audioInside = getByDataInside(audio.getData());
         if (audioInside != null) {
-            return audioInside;
+            audio.setId(audioInside.getId());
+            this.update(audio);
+            return audio;
         }
         long id = super.getDataBase().insert(DatabaseHelper.TABLE_NAME_AUDIO,
                 null, contentValues);

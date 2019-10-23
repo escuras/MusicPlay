@@ -1,12 +1,8 @@
 package com.example.musicplay.fragment;
 
-import android.content.ContentResolver;
-import android.database.Cursor;
-import android.net.Uri;
+import android.app.FragmentTransaction;
+import android.app.ListFragment;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +13,7 @@ import com.example.musicplay.R;
 import com.example.musicplay.domain.Audio;
 import com.example.musicplay.file.StorageUtil;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,10 +41,12 @@ public class ListAlbunsFragment extends ListFragment implements AdapterView.OnIt
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         String value = (String) parent.getAdapter().getItem(position);
         if (value != null && value.length() > 0) {
-            FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+            FragmentTransaction fragmentTransaction = getActivity().getFragmentManager().beginTransaction();
             fragmentTransaction.remove(this);
             Bundle bundle = new Bundle();
             bundle.putString("album",value);
+            audioList = new ArrayList<>();
+            new StorageUtil(getContext()).clearCachedAudioPlaylist();
             ListMusicFragment fragment = new ListMusicFragment();
             fragment.setArguments(bundle);
             fragmentTransaction.replace(R.id.downFragment, fragment);
@@ -57,7 +56,7 @@ public class ListAlbunsFragment extends ListFragment implements AdapterView.OnIt
 
     private void loadAudio() {
         StorageUtil storageUtil = new StorageUtil(getContext());
-        audioList =  storageUtil.loadAudio();
+        audioList = storageUtil.loadAudio(this.getActivity(), null, true);
     }
 
     private Object[] loadAlbuns() {
