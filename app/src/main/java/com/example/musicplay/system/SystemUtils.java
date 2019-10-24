@@ -1,4 +1,4 @@
-package com.example.musicplay.util;
+package com.example.musicplay.system;
 
 import android.content.Context;
 import android.os.VibrationEffect;

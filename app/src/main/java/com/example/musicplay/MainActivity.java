@@ -22,20 +22,20 @@ import com.example.musicplay.domain.Audio;
 import com.example.musicplay.domain.PLayList;
 import com.example.musicplay.activity.ListFileActivity;
 import com.example.musicplay.file.StorageUtil;
-import com.example.musicplay.fragment.ListPlayListsFragment;
+import com.example.musicplay.fragment.ListPlaylistFragment;
 import com.example.musicplay.repository.DBAudioListManager;
 import com.example.musicplay.repository.DBAudioManager;
 import com.example.musicplay.service.MusicService;
-import com.example.musicplay.fragment.ListAlbunsFragment;
-import com.example.musicplay.util.SystemUtils;
+import com.example.musicplay.fragment.ListAlbumFragment;
+import com.example.musicplay.system.SystemUtils;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int SUCCES_REQUEST_PERMISSION_CODE = 1;
     private MusicService player;
     public static boolean serviceBound = false;
-    private ListAlbunsFragment listAlbunsFragment = new ListAlbunsFragment();
-    private ListPlayListsFragment listPlayListsFragment = new ListPlayListsFragment();
+    private ListAlbumFragment listAlbunsFragment = new ListAlbumFragment();
+    private ListPlaylistFragment listPlayListsFragment = new ListPlaylistFragment();
 
     public static final String PLAY_NEW_AUDIO = "com.example.musicplay.PlayNewAudio";
 

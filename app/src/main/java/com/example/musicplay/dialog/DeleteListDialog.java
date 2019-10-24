@@ -8,15 +8,10 @@ import android.os.Bundle;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.ListView;
 
 import com.example.musicplay.R;
 import com.example.musicplay.domain.PLayList;
-import com.example.musicplay.fragment.ListPlayListsFragment;
+import com.example.musicplay.fragment.ListPlaylistFragment;
 import com.example.musicplay.repository.DBRepository;
 
 public class DeleteListDialog extends DialogFragment {
@@ -39,7 +34,7 @@ public class DeleteListDialog extends DialogFragment {
                             dbRepository.deletePlayList(pLayList);
                             FragmentManager fragmentManager = ((AppCompatActivity) getActivity()).getFragmentManager();
                             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                            fragmentTransaction.replace(R.id.upFragment, new ListPlayListsFragment());
+                            fragmentTransaction.replace(R.id.upFragment, new ListPlaylistFragment());
                             fragmentTransaction.commit();
                         }
                     }

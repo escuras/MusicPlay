@@ -14,7 +14,7 @@ import android.widget.EditText;
 
 import com.example.musicplay.R;
 import com.example.musicplay.domain.PLayList;
-import com.example.musicplay.fragment.ListPlayListsFragment;
+import com.example.musicplay.fragment.ListPlaylistFragment;
 import com.example.musicplay.repository.DBRepository;
 
 public class PlayListDialog extends DialogFragment {
@@ -41,7 +41,7 @@ public class PlayListDialog extends DialogFragment {
                             dbRepository.savePlayList(pLayList);
                             FragmentManager fragmentManager =((AppCompatActivity)getActivity()).getFragmentManager();
                             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                            fragmentTransaction.replace(R.id.upFragment, new ListPlayListsFragment());
+                            fragmentTransaction.replace(R.id.upFragment, new ListPlaylistFragment());
                             fragmentTransaction.commit();
                         }
                     }

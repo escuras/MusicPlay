@@ -1,6 +1,5 @@
 package com.example.musicplay.activity;
 
-import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
@@ -12,14 +11,13 @@ import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.example.musicplay.R;
 import com.example.musicplay.dialog.FileDialog;
 import com.example.musicplay.domain.Audio;
 import com.example.musicplay.domain.WayPath;
-import com.example.musicplay.file.FolderAdapter;
-import com.example.musicplay.util.FileUtils;
+import com.example.musicplay.adapter.FolderAdapter;
+import com.example.musicplay.file.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;

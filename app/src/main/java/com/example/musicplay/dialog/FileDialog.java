@@ -3,14 +3,9 @@ package com.example.musicplay.dialog;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,15 +18,11 @@ import com.example.musicplay.R;
 import com.example.musicplay.domain.Audio;
 import com.example.musicplay.domain.PLayList;
 import com.example.musicplay.domain.WayPath;
-import com.example.musicplay.file.FolderAdapter;
 import com.example.musicplay.repository.DBRepository;
-import com.example.musicplay.util.FileUtils;
+import com.example.musicplay.file.FileUtils;
 
 import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class FileDialog extends DialogFragment {

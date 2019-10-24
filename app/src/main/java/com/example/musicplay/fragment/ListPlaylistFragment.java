@@ -23,7 +23,7 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.util.List;
 
-public class ListPlayListsFragment  extends ListFragment implements AdapterView.OnItemClickListener {
+public class ListPlaylistFragment extends ListFragment implements AdapterView.OnItemClickListener {
 
 
     @Override

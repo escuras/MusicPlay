@@ -1,4 +1,4 @@
-package com.example.musicplay.file;
+package com.example.musicplay.adapter;
 
 import android.app.Activity;
 import android.content.Context;

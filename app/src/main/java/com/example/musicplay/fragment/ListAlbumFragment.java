@@ -18,7 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ListAlbunsFragment extends ListFragment implements AdapterView.OnItemClickListener {
+public class ListAlbumFragment extends ListFragment implements AdapterView.OnItemClickListener {
 
     private List<Audio> audioList;
 
